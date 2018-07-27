@@ -18,11 +18,11 @@ func Shell(cmd string) (stdout string, stderr string, err error) {
 func Out(cmd string) (str string, err error) {
 	str, stderr, err := Shell(cmd)
 	if err != nil {
-		err = fmt.Errorf("%s\n%v", stderr, err)
+		err = fmt.Errorf("%s\n%s\n%v", str, stderr, err)
 		return
 	}
 	if stderr != "" {
-		err = fmt.Errorf("%s\n", stderr)
+		err = fmt.Errorf("%s\n%s", str, stderr)
 		return
 	}
 	return
