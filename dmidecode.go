@@ -3,7 +3,7 @@ package shell
 import (
 	"fmt"
 
-	"github.com/dselans/dmidecode"
+	"github.com/radioinmyhead/dmidecode"
 )
 
 func Dmidecode() (*dmidecode.DMI, error) {
