@@ -27,7 +27,7 @@ func Shell(cmd string) (stdout string, stderr string, err error) {
 }
 
 func OutContext(ctx context.Context, cmd string) (str string, err error) {
-	str, stderr, err := ShellContext(cmd)
+	str, stderr, err := ShellContext(ctx, cmd)
 	if err != nil {
 		err = fmt.Errorf("%s\n%s\n%v", str, stderr, err)
 		return
