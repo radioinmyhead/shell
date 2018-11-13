@@ -2,11 +2,12 @@ package shell
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 )
 
-func ShellContext(ctx, cmd string) (stdout string, stderr string, err error) {
+func ShellContext(ctx context.Context, cmd string) (stdout string, stderr string, err error) {
 	c := exec.CommandContext(ctx, "bash", "-c", cmd)
 	var o, e bytes.Buffer
 	c.Stdout = &o
@@ -25,7 +26,7 @@ func Shell(cmd string) (stdout string, stderr string, err error) {
 	return o.String(), e.String(), err
 }
 
-func OutContext(ctx, cmd string) (str string, err error) {
+func OutContext(ctx context.Context, cmd string) (str string, err error) {
 	str, stderr, err := ShellContext(cmd)
 	if err != nil {
 		err = fmt.Errorf("%s\n%s\n%v", str, stderr, err)
