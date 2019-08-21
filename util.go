@@ -10,8 +10,6 @@ import (
 	"reflect"
 )
 
-type Process struct{}
-
 // run command as bash
 func Bash(ctx context.Context, cmd string) (ret string, err error) {
 	var o, e bytes.Buffer
@@ -84,7 +82,7 @@ func Output(cmd string) (ret string, err error) {
 	return
 }
 
-func (p *Process) SetField(obj interface{}, name string, value interface{}) error {
+func SetField(obj interface{}, name string, value interface{}) error {
 	structValue := reflect.ValueOf(obj).Elem()
 	structFieldValue := structValue.FieldByName(name)
 
