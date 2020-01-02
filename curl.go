@@ -26,7 +26,8 @@ func CurlZcat(url string) (ret []byte, err error) {
 		return
 	}
 
-	ret, err = Unzip(bytes.NewBufferString(b))
+	str := string(b)
+	ret, err = Unzip(bytes.NewBufferString(str))
 	if err != nil {
 		return
 	}
