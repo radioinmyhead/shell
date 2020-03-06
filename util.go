@@ -1,6 +1,7 @@
 package shell
 
 import (
+	//"bufio"
 	"bufio"
 	"bytes"
 	"context"
@@ -45,7 +46,6 @@ func Run(ctx context.Context, oricmd []string) (ch chan string, code chan int, e
 	if err != nil {
 		return
 	}
-	defer pw.Close()
 	cmd.Stdout = pw
 	cmd.Stderr = pw
 
@@ -53,20 +53,24 @@ func Run(ctx context.Context, oricmd []string) (ch chan string, code chan int, e
 	if err != nil {
 		return
 	}
+	pw.Close() // close after cmd.Start
 
 	ch = make(chan string)
+	code = make(chan int)
 	go func() {
-		defer close(ch)
-		defer close(code)
-		defer pr.Close()
-		scanner := bufio.NewScanner(pr)
-		scanner.Split(bufio.ScanLines)
-		for scanner.Scan() {
-			m := scanner.Text()
-			ch <- m
-		}
+		// wait end, send exit-code
 		cmd.Wait()
+		pr.Close() // close after cmd.Wait
 		code <- cmd.ProcessState.Sys().(syscall.WaitStatus).ExitStatus()
+		close(code)
+	}()
+	go func() {
+		// read result
+		scanner := bufio.NewScanner(pr)
+		for scanner.Scan() {
+			ch <- scanner.Text()
+		}
+		close(ch)
 	}()
 	return
 }

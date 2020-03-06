@@ -29,3 +29,18 @@ func TestOut(t *testing.T) {
 	assert.Nil(err, "exit code")
 	assert.Equal("abc\n", stdout)
 }
+
+func TestRun(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	assert := assert.New(t)
+	ch, code, err := Run(ctx, []string{"seq", "1", "3"})
+	assert.Nil(err, "start command")
+	ret := ""
+	for line := range ch {
+		ret += line
+	}
+	assert.Equal("123", ret)
+	n := <-code
+	assert.Equal(0, n)
+}
