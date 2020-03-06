@@ -6,14 +6,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"reflect"
+	"syscall"
 )
 
 // run command as bash
-func Bash(ctx context.Context, cmd string) (ret string, err error) {
+func Bash(ctx context.Context, cmd string) (stdout, stderr string, code int, err error) {
 	var o, e bytes.Buffer
-	var se string
 
 	parms := []string{"-o0", "-e0", "bash", "-c", cmd}
 
@@ -27,57 +28,63 @@ func Bash(ctx context.Context, cmd string) (ret string, err error) {
 		return
 	}
 
-	se = e.String()
-	if se != "" {
-		err = fmt.Errorf("run shell: %s: %s", cmd, se)
-		return
-	}
+	stderr = e.String()
+	stdout = o.String()
+	code = c.ProcessState.Sys().(syscall.WaitStatus).ExitStatus()
 
-	ret = o.String()
 	return
 }
 
-func Run(ctx context.Context, oricmd []string) (ch chan string, err error) {
+func Run(ctx context.Context, oricmd []string) (ch chan string, code chan int, err error) {
 	// refer to: https://unix.stackexchange.com/questions/25372/turn-off-buffering-in-pipe
 	// script run command in a pseudo terminal (pty). man script for help
 	parms := append([]string{"-o0", "-e0"}, oricmd...)
 	cmd := exec.CommandContext(ctx, "stdbuf", parms...)
-	stdout, err := cmd.StdoutPipe()
+
+	pr, pw, err := os.Pipe()
 	if err != nil {
-		err = fmt.Errorf("shell run: %v", err)
 		return
 	}
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
+	defer pw.Close()
+	cmd.Stdout = pw
+	cmd.Stderr = pw
 
 	err = cmd.Start()
 	if err != nil {
-		err = fmt.Errorf("shell run: %v: %v", err, stderr.String())
 		return
 	}
 
 	ch = make(chan string)
 	go func() {
 		defer close(ch)
-		scanner := bufio.NewScanner(stdout)
+		defer close(code)
+		defer pr.Close()
+		scanner := bufio.NewScanner(pr)
 		scanner.Split(bufio.ScanLines)
 		for scanner.Scan() {
 			m := scanner.Text()
 			ch <- m
 		}
 		cmd.Wait()
+		code <- cmd.ProcessState.Sys().(syscall.WaitStatus).ExitStatus()
 	}()
 	return
 }
 
 func Output(cmd string) (ret string, err error) {
+	var stderr string
+	var code int
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ret, err = Bash(ctx, cmd)
+	ret, stderr, code, err = Bash(ctx, cmd)
 	if err != nil {
 		err = fmt.Errorf("shell output: %v", err)
 		return
+	}
+	if code != 0 {
+		ret += stderr
+		err = fmt.Errorf("exit code=%v", code)
 	}
 	return
 }

@@ -13,11 +13,11 @@ func TestShell(t *testing.T) {
 
 	assert := assert.New(t)
 
-	stdout, err := Bash(ctx, `grep -io ABC <(echo -ne '123abc!@#\n$' | grep -P '\d+')`)
+	stdout, _, _, err := Bash(ctx, `grep -io ABC <(echo -ne '123abc!@#\n$' | grep -P '\d+')`)
 	assert.Nil(err, "exit code")
 	assert.Equal("abc\n", stdout)
 
-	stdout, err = Bash(ctx, `echo 123|grep abc`)
+	stdout, _, _, err = Bash(ctx, `echo 123|grep abc`)
 	assert.NotNil(err, "exit code")
 }
 
