@@ -61,16 +61,24 @@ func Run(ctx context.Context, oricmd []string) (ch chan string, code chan int, e
 		// wait end, send exit-code
 		cmd.Wait()
 		pr.Close() // close after cmd.Wait
-		code <- cmd.ProcessState.Sys().(syscall.WaitStatus).ExitStatus()
-		close(code)
+		defer close(code)
+		select {
+		case <-ctx.Done():
+			return
+		case code <- cmd.ProcessState.Sys().(syscall.WaitStatus).ExitStatus():
+		}
 	}()
 	go func() {
 		// read result
+		defer close(ch)
 		scanner := bufio.NewScanner(pr)
 		for scanner.Scan() {
-			ch <- scanner.Text()
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- scanner.Text():
+			}
 		}
-		close(ch)
 	}()
 	return
 }
